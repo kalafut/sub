@@ -4,6 +4,11 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import sys
+
+
+class SubError(Exception):
+    pass
 
 
 @dataclass
@@ -34,22 +39,17 @@ def process(directory, recursive=False):
     base = Path(directory).rglob("*") if recursive else Path(directory).glob("*")
     files = [f for f in base if f.is_file() and f.suffix.endswith((".html", ".css"))]
 
-    for file in files:
-        try:
+    try:
+        for file in files:
             collect(Path(file).read_text(), comment_patterns[file.suffix[1:]])
-        except ValueError as e:
-            print(f"{file}: duplicate identifier '{e}'")
-            return
 
-    for file in files:
-        contents = Path(file).read_text()
-        try:
+        for file in files:
+            contents = Path(file).read_text()
             updated = replace(contents, comment_patterns[file.suffix[1:]])
             if contents != updated:
                 Path(file).write_text(updated)
-        except KeyError as e:
-            print(f"{file}: unknown identifier {e}")
-            return
+    except SubError as e:
+        raise SubError(f"{file}: {e}")
 
 
 def collect(s: str, pattern: CommentPattern):
@@ -57,7 +57,7 @@ def collect(s: str, pattern: CommentPattern):
         identifier, content = match.groups()
 
         if identifier in captures:
-            raise ValueError(identifier)
+            raise SubError(f"duplicate identifier '{identifier}'")
 
         captures[identifier] = content
 
@@ -65,6 +65,8 @@ def collect(s: str, pattern: CommentPattern):
 def replace(s, pattern: CommentPattern) -> str:
     def sub_repl(match):
         ident = match.group(1)
+        if ident not in captures:
+            raise SubError(f"unknown identifier '{ident}'")
         return pattern.start(ident) + captures[ident] + pattern.end()
 
     return re.sub(pattern.re("#"), sub_repl, s, flags=re.DOTALL)
@@ -87,4 +89,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    process(args.dir, recursive=args.recursive)
+    try:
+        process(args.dir, recursive=args.recursive)
+    except SubError as e:
+        print(e)
+        sys.exit(1)
