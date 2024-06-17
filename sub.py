@@ -35,7 +35,11 @@ def process(directory, recursive=False):
     files = [f for f in base if f.is_file() and f.suffix.endswith((".html", ".css"))]
 
     for file in files:
-        collect(Path(file).read_text(), comment_patterns[file.suffix[1:]])
+        try:
+            collect(Path(file).read_text(), comment_patterns[file.suffix[1:]])
+        except ValueError as e:
+            print(f"{file}: duplicate identifier '{e}'")
+            return
 
     for file in files:
         contents = Path(file).read_text()
@@ -44,7 +48,7 @@ def process(directory, recursive=False):
             if contents != updated:
                 Path(file).write_text(updated)
         except KeyError as e:
-            print(f"Error processing: {file}. Unknown identifier: {e}")
+            print(f"{file}: unknown identifier {e}")
             return
 
 
@@ -53,7 +57,7 @@ def collect(s: str, pattern: CommentPattern):
         identifier, content = match.groups()
 
         if identifier in captures:
-            raise ValueError(f"Duplicate identifier: {identifier}")
+            raise ValueError(identifier)
 
         captures[identifier] = content
 
