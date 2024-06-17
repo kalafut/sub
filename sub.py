@@ -35,12 +35,12 @@ def process(directory, recursive=False):
     files = [f for f in base if f.is_file() and f.suffix.endswith((".html", ".css"))]
 
     for file in files:
-        extract_blocks(Path(file).read_text(), comment_patterns[file.suffix[1:]])
+        collect(Path(file).read_text(), comment_patterns[file.suffix[1:]])
 
     for file in files:
         contents = Path(file).read_text()
         try:
-            updated = replace_sub_range(contents, comment_patterns[file.suffix[1:]])
+            updated = replace(contents, comment_patterns[file.suffix[1:]])
             if contents != updated:
                 Path(file).write_text(updated)
         except KeyError as e:
@@ -48,7 +48,7 @@ def process(directory, recursive=False):
             return
 
 
-def extract_blocks(s: str, pattern: CommentPattern):
+def collect(s: str, pattern: CommentPattern):
     for match in re.finditer(pattern.re("@"), s, re.DOTALL):
         identifier, content = match.groups()
 
@@ -58,9 +58,7 @@ def extract_blocks(s: str, pattern: CommentPattern):
         captures[identifier] = content
 
 
-def replace_sub_range(s, pattern: CommentPattern) -> str:
-    # print(pattern)
-
+def replace(s, pattern: CommentPattern) -> str:
     def sub_repl(match):
         ident = match.group(1)
         return pattern.start(ident) + captures[ident] + pattern.end()
@@ -72,7 +70,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "dir",
-        help="directory to read files from (default: '.')",
+        help="directory to process (default: '.')",
         type=str,
         default=".",
         nargs="?",
