@@ -35,6 +35,7 @@ sub [-r] [dir]  # -r recursively process files
 ## Notes
 
 - The processing flow is: 1) look for labeled secions across all files, 2) replace referenced sections across all files. You can reference any section anywhere, even within the same file, before the defintion, etc.
+- Names are global across all files, and duplicates are an error.
 - Files are edited in place.
 - HTML and CSS are supported, but it could easily be extended to other formats.
 - There are checks for duplicate or unknown labels, but overall it is pretty basic without a lot of extra validation. Nesting things and forgetting to close tags will cause surprises. I played around with nested definitions, but it added a lot of complexity for what is likely a rare use case.
