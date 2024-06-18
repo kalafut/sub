@@ -35,7 +35,7 @@ comment_patterns = {
 captures = {}
 
 
-def process(directory, recursive=False):
+def process(directory, recursive=False, check=False):
     base = Path(directory).rglob("*") if recursive else Path(directory).glob("*")
     files = [f for f in base if f.is_file() and f.suffix.endswith((".html", ".css"))]
 
@@ -47,6 +47,8 @@ def process(directory, recursive=False):
             contents = Path(file).read_text()
             updated = replace(contents, comment_patterns[file.suffix[1:]])
             if contents != updated:
+                if check:
+                    raise SubError(f"changes required (run without --check to fix)")
                 Path(file).write_text(updated)
     except SubError as e:
         raise SubError(f"{file}: {e}")
@@ -82,6 +84,12 @@ if __name__ == "__main__":
         nargs="?",
     )
     parser.add_argument(
+        "-c",
+        "--check",
+        help="check that all files are up-to-date",
+        action="store_true",
+    )
+    parser.add_argument(
         "-r",
         "--recursive",
         help="process directories recursively",
@@ -90,7 +98,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        process(args.dir, recursive=args.recursive)
+        process(args.dir, recursive=args.recursive, check=args.check)
     except SubError as e:
         print(e)
         sys.exit(1)

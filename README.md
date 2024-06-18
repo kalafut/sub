@@ -29,8 +29,12 @@ This will be replaced with the contents of "foo".
 The script is run as:
 
 ```sh
-sub [-r] [dir]  # -r recursively process files
+sub [-r] [-c] [dir]
 ```
+
+- `dir` is the CWD if not specified
+- `-r` will process files recursively
+- `-c` will check that files up to date and raise an error if edits would be made. This can be a useful check before committing changes or in CI.
 
 ## Notes
 
